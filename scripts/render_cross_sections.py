@@ -488,6 +488,37 @@ def _compute_cut_planes(spec, mesh):
             ]
         })
 
+    # Always add XZ and YZ cuts through centroid for parts with no/few features
+    # These catch geometry issues invisible in XY-only cuts (e.g., curved hooks,
+    # L-brackets, wall-mount profiles)
+    if len(spec.get("features", [])) == 0 and len(spec.get("components", [])) == 0:
+        # XZ cut at Y midpoint — shows the part's side profile
+        cuts.append({
+            'origin': [xmid, ymid, zmid],
+            'normal': [0, 1, 0],
+            'label': f"Section at Y={ymid:.1f}mm — XZ Plane — side profile",
+            'filename': f"section_Y{ymid:.1f}_XZ_side_profile.png",
+            'expected': [
+                {'name': 'overall width', 'value': dims.get('width', 0),
+                 'tolerance': overall_tol, 'type': 'overall_h'},
+                {'name': 'overall height', 'value': dims.get('height', 0),
+                 'tolerance': overall_tol, 'type': 'overall_v'},
+            ]
+        })
+        # YZ cut at X midpoint — shows the part's front profile
+        cuts.append({
+            'origin': [xmid, ymid, zmid],
+            'normal': [1, 0, 0],
+            'label': f"Section at X={xmid:.1f}mm — YZ Plane — front profile",
+            'filename': f"section_X{xmid:.1f}_YZ_front_profile.png",
+            'expected': [
+                {'name': 'overall depth', 'value': dims.get('depth', 0),
+                 'tolerance': overall_tol, 'type': 'overall_h'},
+                {'name': 'overall height', 'value': dims.get('height', 0),
+                 'tolerance': overall_tol, 'type': 'overall_v'},
+            ]
+        })
+
     # Deduplicate cuts at near-identical positions (within 0.5mm)
     deduped = []
     for cut in cuts:
