@@ -68,10 +68,21 @@ The working directory is a git repo. Commit at milestones — after base shape a
   )
   write_spec(spec, "part.step")   # writes part.spec.json
   ```
+
+  **Feature type guide:**
+  - `"slot"` — a closed gap or through-cut between walls. Validator probes cross-section gap width. Use when the feature has material on BOTH sides.
+  - `"pocket"` — an open cavity, recess, or trough. Validator checks component fit envelope. Use for open-top channels, blind pockets, and recesses where one side is open.
+  - `"hole"` — a circular through-hole or blind hole. Validator matches by diameter.
+  - `"channel"` — a long continuous groove. Validator checks cross-section profile.
+  - When in doubt: if the feature is open on top or one side, use `"pocket"`. If it has walls on all sides, use `"slot"`.
+
+  **Spec scope per phase:** The spec describes ONLY the geometry present in the current phase's export. Phase 1 spec = overall dimensions and material only — no features. Phase 2 spec = add features as they're built. Phase 3 spec = final complete spec. Each phase's export gets its own spec that matches what exists in that STEP file.
 - Export STEP and run **post-export validation** (see below).
 - Render a 4-view preview using the render script.
 - **Show the preview to the user.** Ask: "Does this base shape and proportion look right?"
 - Iterate until the base is approved.
+
+> **GATE: Do not proceed to the next phase until the user explicitly approves this phase.** If the user has not responded, wait. If the user rejects, iterate on this phase until approved. Delivering a finished part without intermediate checkpoint approvals violates the workflow.
 
 ### Phase 1.5: Text & Labeling
 If the part needs text labels, handle them BEFORE mechanical features (holes, chamfers) because those operations pollute the workplane origin.
@@ -101,12 +112,18 @@ python ~/.claude/skills/cad-skill/scripts/check_printability.py part.step
 - **Ask:** "Are the features positioned correctly? Anything to add or move?"
 - Iterate until features are approved.
 
+> **GATE: Do not proceed to the next phase until the user explicitly approves this phase.** If the user has not responded, wait. If the user rejects, iterate on this phase until approved. Delivering a finished part without intermediate checkpoint approvals violates the workflow.
+
+> **When the user gives multiple corrections:** Fix functional mismatches first (wrong feature type, missing features, incorrect dimensions for interfacing parts), then aesthetic issues (depth, fillet radius, proportions). A part with the right features at wrong proportions is closer to done than a part with wrong features at right proportions.
+
 ### Phase 3: Print Optimization & Delivery
 - Apply print-friendly adjustments: chamfer bottom edges (not fillet — fillets need supports), check overhang angles, ensure wall thickness.
 - Export final STL + STEP.
 - Run post-export validation. Fix any FAILs.
 - Run the self-review checklist (see below) for anything the scripts can't check.
 - Present a **parameter table** listing all key dimensions so the user can request quick tweaks.
+
+> **GATE: Do not proceed to the next phase until the user explicitly approves this phase.** If the user has not responded, wait. If the user rejects, iterate on this phase until approved. Delivering a finished part without intermediate checkpoint approvals violates the workflow.
 
 ### Phase 4: Plate Packing (Bitmap Nesting)
 

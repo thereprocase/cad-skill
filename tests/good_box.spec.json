@@ -1,0 +1,24 @@
+{
+  "part_name": "good slotted block",
+  "overall_dimensions": {
+    "width": 60.0,
+    "depth": 40.0,
+    "height": 25.0,
+    "tolerance": 0.3
+  },
+  "min_wall_mm": 2.0,
+  "material": "PLA",
+  "features": [
+    {
+      "type": "slot",
+      "name": "center slot",
+      "width": 5.0,
+      "probe_z": 5.0,
+      "tolerance": 0.3
+    }
+  ],
+  "components": [],
+  "overhangs_ok": false,
+  "max_overhang_angle_deg": 45.0,
+  "max_bridge_span_mm": 20.0
+}

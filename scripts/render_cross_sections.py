@@ -124,16 +124,14 @@ def _slice_mesh(mesh, plane_origin, plane_normal):
     paths_2d = []
     try:
         # lines is a Path3D; get its discrete entities
-        path_2d, _ = lines.to_planar()
+        path_2d, _transform = lines.to_2D()
         for polygon in path_2d.polygons_full:
             coords = np.array(polygon.exterior.coords)
-            # path_2d already has 2D coords, but we need them in our frame
-            # Actually to_planar() gives us 2D coords directly
             paths_2d.append(coords)
             for interior in polygon.interiors:
                 paths_2d.append(np.array(interior.coords))
-    except Exception:
-        # Fallback: project raw vertices
+    except Exception as e:
+        print(f"[sections] Warning: to_2D() failed ({e}), falling back to vertex projection")
         for entity in lines.entities:
             pts_3d = lines.vertices[entity.points]
             pts_2d = project(pts_3d)
@@ -174,7 +172,7 @@ def _slice_mesh_polygons(mesh, plane_origin, plane_normal):
         labels = ("U", "V")
 
     try:
-        path_2d, transform = lines.to_planar()
+        path_2d, transform = lines.to_2D()
         polygons = list(path_2d.polygons_full)
         if not polygons:
             return [], labels, None, transform
@@ -188,7 +186,8 @@ def _slice_mesh_polygons(mesh, plane_origin, plane_normal):
             all_bounds[:, 3].max(),
         )
         return polygons, labels, bbox, transform
-    except Exception:
+    except Exception as e:
+        print(f"[sections] Warning: to_2D() polygon extraction failed: {e}")
         return [], labels, None, None
 
 

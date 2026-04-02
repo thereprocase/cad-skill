@@ -6,3 +6,5 @@ matplotlib>=3.5,<4.0
 pillow>=9.0,<11.0
 numpy>=1.21,<3.0
 scipy>=1.7,<2.0
+shapely>=2.0,<3.0
+rtree>=1.0,<2.0

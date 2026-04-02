@@ -357,7 +357,7 @@ def check_components(shape, spec: dict) -> list:
             if measured >= required:
                 actual_clearance = (measured - nominal) / 2.0
                 detail = (
-                    f"cavity {measured:.2f}mm ≥ {nominal:.2f}mm component "
+                    f"cavity {measured:.2f}mm >= {nominal:.2f}mm component "
                     f"+ {clearance:.2f}mm×2 clearance "
                     f"(actual each side: {actual_clearance:.2f}mm)"
                 )
@@ -408,7 +408,7 @@ def check_minimum_wall(shape, spec: dict) -> list:
     if thinnest == float("inf"):
         return [_pass(label, "solid part — no hollow sections detected")]
 
-    detail = f"{thinnest:.2f}mm at Z≈{thinnest_z:.1f}mm (minimum required: {min_wall:.2f}mm)"
+    detail = f"{thinnest:.2f}mm at Z~{thinnest_z:.1f}mm (minimum required: {min_wall:.2f}mm)"
     if thinnest >= min_wall:
         return [_pass(label, detail)]
     else:

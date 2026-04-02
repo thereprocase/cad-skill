@@ -399,16 +399,35 @@ def _min_thickness_from_path2d(path2d, resolution: float = 0.2) -> float | None:
     img = Image.new("L", (w_px, h_px), 0)
     draw = ImageDraw.Draw(img)
 
-    for entity in path2d.entities:
-        try:
-            pts = path2d.vertices[entity.points]
-            px = ((pts[:, 0] - xmin) / resolution + MARGIN_PX).tolist()
-            py = ((pts[:, 1] - ymin) / resolution + MARGIN_PX).tolist()
+    # Even-odd fill: draw outer boundary as filled, inner boundaries as holes.
+    # polygons_full from shapely gives proper exterior/interior topology.
+    try:
+        for polygon in path2d.polygons_full:
+            ext = polygon.exterior.coords
+            px = ((np.array([c[0] for c in ext]) - xmin) / resolution + MARGIN_PX).tolist()
+            py = ((np.array([c[1] for c in ext]) - ymin) / resolution + MARGIN_PX).tolist()
             poly = list(zip(px, py))
             if len(poly) >= 3:
                 draw.polygon(poly, fill=255)
-        except Exception:
-            continue
+            for interior in polygon.interiors:
+                int_coords = interior.coords
+                px = ((np.array([c[0] for c in int_coords]) - xmin) / resolution + MARGIN_PX).tolist()
+                py = ((np.array([c[1] for c in int_coords]) - ymin) / resolution + MARGIN_PX).tolist()
+                hole = list(zip(px, py))
+                if len(hole) >= 3:
+                    draw.polygon(hole, fill=0)
+    except Exception:
+        # Fallback: draw entities directly (old behavior)
+        for entity in path2d.entities:
+            try:
+                pts = path2d.vertices[entity.points]
+                px = ((pts[:, 0] - xmin) / resolution + MARGIN_PX).tolist()
+                py = ((pts[:, 1] - ymin) / resolution + MARGIN_PX).tolist()
+                poly = list(zip(px, py))
+                if len(poly) >= 3:
+                    draw.polygon(poly, fill=255)
+            except Exception:
+                continue
 
     bitmap = np.array(img, dtype=bool)
     if not bitmap.any():
@@ -626,16 +645,33 @@ def _min_feature_at_z(mesh, z: float) -> float | None:
     img = Image.new("L", (w_px, h_px), 0)
     draw = ImageDraw.Draw(img)
 
-    for entity in path2d.entities:
-        try:
-            pts = path2d.vertices[entity.points]
-            px = ((pts[:, 0] - xmin) / res + MARGIN_PX).tolist()
-            py = ((pts[:, 1] - ymin) / res + MARGIN_PX).tolist()
+    # Even-odd fill: outer boundaries filled, inner boundaries as holes
+    try:
+        for polygon in path2d.polygons_full:
+            ext = polygon.exterior.coords
+            px = ((np.array([c[0] for c in ext]) - xmin) / res + MARGIN_PX).tolist()
+            py = ((np.array([c[1] for c in ext]) - ymin) / res + MARGIN_PX).tolist()
             poly = list(zip(px, py))
             if len(poly) >= 3:
                 draw.polygon(poly, fill=255)
-        except Exception:
-            continue
+            for interior in polygon.interiors:
+                int_coords = interior.coords
+                px = ((np.array([c[0] for c in int_coords]) - xmin) / res + MARGIN_PX).tolist()
+                py = ((np.array([c[1] for c in int_coords]) - ymin) / res + MARGIN_PX).tolist()
+                hole = list(zip(px, py))
+                if len(hole) >= 3:
+                    draw.polygon(hole, fill=0)
+    except Exception:
+        for entity in path2d.entities:
+            try:
+                pts = path2d.vertices[entity.points]
+                px = ((pts[:, 0] - xmin) / res + MARGIN_PX).tolist()
+                py = ((pts[:, 1] - ymin) / res + MARGIN_PX).tolist()
+                poly = list(zip(px, py))
+                if len(poly) >= 3:
+                    draw.polygon(poly, fill=255)
+            except Exception:
+                continue
 
     bitmap = np.array(img, dtype=bool)
     if not bitmap.any():
