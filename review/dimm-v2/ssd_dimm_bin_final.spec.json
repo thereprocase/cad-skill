@@ -1,0 +1,55 @@
+{
+  "part_name": "Gridfinity SSD+DIMM Bin v2 \u2014 Final",
+  "overall_dimensions": {
+    "width": 167.5,
+    "depth": 83.5,
+    "height": 49.0,
+    "tolerance": 0.3
+  },
+  "material": "PLA",
+  "min_wall_mm": 1.2,
+  "components": [
+    {
+      "name": "DDR4 DIMM",
+      "length": 133.35,
+      "width": 31.25,
+      "height": 3.8,
+      "clearance_mm": 0.5,
+      "effective_clearance_mm": 0.5
+    },
+    {
+      "name": "M.2 2280 SSD",
+      "length": 80.0,
+      "width": 22.0,
+      "height": 2.2,
+      "clearance_mm": 0.5,
+      "effective_clearance_mm": 0.5
+    }
+  ],
+  "features": [
+    {
+      "type": "slot",
+      "name": "DIMM slot",
+      "width": 4.3,
+      "probe_z": 20.0,
+      "tolerance": 0.3
+    },
+    {
+      "type": "slot",
+      "name": "SSD slot",
+      "width": 2.7,
+      "probe_z": 20.0,
+      "tolerance": 0.3
+    },
+    {
+      "type": "pocket",
+      "name": "finger scallop",
+      "width": 30.0,
+      "probe_z": 44.0,
+      "tolerance": 2.0
+    }
+  ],
+  "overhangs_ok": false,
+  "max_overhang_angle_deg": 45.0,
+  "max_bridge_span_mm": 20.0
+}
