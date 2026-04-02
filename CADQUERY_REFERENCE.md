@@ -229,6 +229,7 @@ cq.exporters.export(result, "part.step")
 7. **Workplane origin stacking** — `.center(x, y)` permanently mutates the plane origin. Subsequent `.faces().workplane()` inherits the shifted origin via `ProjectedOrigin` (the default `centerOption`). This causes features placed later to be offset. See Workplane Context Stacking section below.
 8. **`combine='cut'` text deboss fails silently** — CadQuery's `.text(..., combine='cut')` often produces no change. Use a fresh workplane + explicit `.cut()` instead. See Text Deboss section below.
 9. **Additive text overflows body** — `.text(..., combine='a')` can create geometry outside the body outline. Clip with `.intersect()` or use deboss instead.
+10. **Revolved profiles on non-XY workplanes** — `.transformed(offset=(a,b,c))` on XZ or YZ workplanes maps offset to the LOCAL frame, not world coordinates. On an XZ workplane, local-Y is world-Z and the normal is world-Y. A revolve tool placed with `offset=(cx, top_z, cy)` on XZ ends up at world (cx, cy, top_z) — which may be wrong if you assumed world mapping. For revolved chamfer/fillet tools, prefer building on XY and translating the result, or verify with `verify_boolean` that the cut actually changed the geometry.
 
 ---
 
