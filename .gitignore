@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.stl
+*.png
+test_sections/
