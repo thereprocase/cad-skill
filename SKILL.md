@@ -77,9 +77,17 @@ The working directory is a git repo. Commit at milestones — after base shape a
   - When in doubt: if the feature is open on top or one side, use `"pocket"`. If it has walls on all sides, use `"slot"`.
 
   **Spec scope per phase:** The spec describes ONLY the geometry present in the current phase's export. Phase 1 spec = overall dimensions and material only — no features. Phase 2 spec = add features as they're built. Phase 3 spec = final complete spec. Each phase's export gets its own spec that matches what exists in that STEP file.
+
+  **Every measurable feature MUST be declared.** Every hole, slot, pocket, screw boss, and structural feature in the geometry must appear in the spec. If the spec has no features, the validators cannot verify internal geometry and cross-sections have nothing to cut against. An empty `features` array on a part with holes is a spec capture failure — go back and declare them.
+
 - Export STEP and run **post-export validation** (see below).
 - Render a 4-view preview using the render script.
-- **Show the preview to the user.** Ask: "Does this base shape and proportion look right?"
+- **Render cross-sections** — these are mandatory at every checkpoint, not optional:
+  ```bash
+  python ~/.claude/skills/cad-skill/scripts/render_cross_sections.py part.step
+  ```
+  Cross-sections verify internal geometry that 3D renders cannot show. For thin parts, shallow slots, and internal cavities, the cross-sections ARE the review — the 3D preview only shows the outside.
+- **Show the preview, cross-sections, and validator results to the user.** Ask: "Does this base shape and proportion look right?"
 - Iterate until the base is approved.
 
 > **GATE: Do not proceed to the next phase until the user explicitly approves this phase.** If the user has not responded, wait. If the user rejects, iterate on this phase until approved. Delivering a finished part without intermediate checkpoint approvals violates the workflow.
@@ -96,19 +104,24 @@ If the part needs text labels, handle them BEFORE mechanical features (holes, ch
 
 ### Post-Export Validation (after every phase)
 
-After exporting STEP, run both validators before rendering a preview:
+After exporting STEP, run ALL THREE validation tools before showing anything to the user:
 ```bash
 python ~/.claude/skills/cad-skill/scripts/validate_geometry.py part.step
 python ~/.claude/skills/cad-skill/scripts/check_printability.py part.step
+python ~/.claude/skills/cad-skill/scripts/render_cross_sections.py part.step
 ```
 - **FAIL = fix before showing the user.** The whole point is Claude catches its own mistakes.
 - **WARN = OK to show.** Flag warnings to the user so they can decide.
+- **Cross-sections are mandatory every iteration.** Minimum 3 sections per checkpoint (XY, XZ, YZ). Feature-driven cuts are added on top. Show ALL section PNGs to the user alongside the 3D preview. For thin parts and internal geometry, the cross-sections are more informative than the 3D render.
 - `validate_geometry.py` reads the `.spec.json` written during spec capture. If there's no spec file, it errors — that's the reminder to write one.
 - `check_printability.py` works with or without a spec (falls back to FDM defaults).
+- `render_cross_sections.py` reads the spec for smart cut locations but always produces at least 4 sections even with an empty spec.
 
 ### Phase 2: Features
 - Add internal features: holes, slots, pockets, mounting posts, cable routes, fillets, chamfers.
-- Export STEP, run post-export validation, render preview, show to user.
+- **Update the spec** to declare every new feature (holes, slots, pockets). An empty `features` array at Phase 2 is always wrong — you just added features, declare them.
+- Export STEP, run ALL THREE post-export tools (validate_geometry, check_printability, render_cross_sections).
+- Show preview, cross-sections, and validator results to the user.
 - **Ask:** "Are the features positioned correctly? Anything to add or move?"
 - Iterate until features are approved.
 
@@ -119,8 +132,9 @@ python ~/.claude/skills/cad-skill/scripts/check_printability.py part.step
 ### Phase 3: Print Optimization & Delivery
 - Apply print-friendly adjustments: chamfer bottom edges (not fillet — fillets need supports), check overhang angles, ensure wall thickness.
 - Export final STL + STEP.
-- Run post-export validation. Fix any FAILs.
+- Run ALL THREE post-export tools. Fix any FAILs.
 - Run the self-review checklist (see below) for anything the scripts can't check.
+- Show final preview, cross-sections, and validator results to the user.
 - Present a **parameter table** listing all key dimensions so the user can request quick tweaks.
 
 > **GATE: Do not proceed to the next phase until the user explicitly approves this phase.** If the user has not responded, wait. If the user rejects, iterate on this phase until approved. Delivering a finished part without intermediate checkpoint approvals violates the workflow.

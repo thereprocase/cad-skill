@@ -30,18 +30,27 @@ from spec_format import load_spec
 # ── Result helpers ────────────────────────────────────────────────────────────
 
 class CheckResult:
-    def __init__(self, label: str, passed: bool, detail: str):
+    def __init__(self, label: str, passed: bool, detail: str, warn: bool = False):
         self.label = label
         self.passed = passed
+        self.warn = warn
         self.detail = detail
 
     def __str__(self):
-        tag = "[PASS]" if self.passed else "[FAIL]"
+        if self.warn:
+            tag = "[WARN]"
+        elif self.passed:
+            tag = "[PASS]"
+        else:
+            tag = "[FAIL]"
         return f"{tag} {self.label}: {self.detail}"
 
 
 def _pass(label, detail):
     return CheckResult(label, True, detail)
+
+def _warn(label, detail):
+    return CheckResult(label, True, detail, warn=True)
 
 def _fail(label, detail):
     return CheckResult(label, False, detail)
@@ -301,9 +310,25 @@ def _find_nearest_hole(shape, expected_diameter: float, position=None):
 
     if position and len(position) >= 2:
         px, py = float(position[0]), float(position[1])
-        candidates.sort(key=lambda c: (
-            (c[1][0] - px) ** 2 + (c[1][1] - py) ** 2
-        ))
+        pz = float(position[2]) if len(position) >= 3 else None
+
+        # Narrow to circles within 5mm XY of the specified position.
+        xy_dist = lambda c: ((c[1][0] - px) ** 2 + (c[1][1] - py) ** 2) ** 0.5
+        xy_near = [c for c in candidates if xy_dist(c) <= 5.0]
+        if xy_near:
+            candidates = xy_near
+
+        # Sort key: prefer closest to expected_diameter first.
+        # When two candidates have the same diameter (e.g. two identical holes
+        # at the same XY but different Z), break ties by Z proximity when a
+        # probe_z hint was given.
+        if pz is not None:
+            candidates.sort(key=lambda c: (
+                abs(c[0] - expected_diameter),
+                abs(c[1][2] - pz)
+            ))
+        else:
+            candidates.sort(key=lambda c: abs(c[0] - expected_diameter))
     else:
         candidates.sort(key=lambda c: abs(c[0] - expected_diameter))
 
@@ -382,10 +407,14 @@ def check_minimum_wall(shape, spec: dict) -> list:
     a more thorough mesh-based analysis for complex geometry.
     """
     min_wall = spec["min_wall_mm"]
-    part_height = spec["overall_dimensions"]["height"]
     bb_full = _bounding_box(shape)
+    z_min = bb_full.zmin
+    z_max = bb_full.zmax
 
-    z_samples = [part_height * f for f in (0.15, 0.30, 0.50, 0.70, 0.85)]
+    # Sample at fractions of the actual Z range, offset from z_min.
+    # Avoid the top 15% and bottom 10% where chamfers/fillets can give
+    # misleadingly thin bounding-box wall estimates.
+    z_samples = [z_min + (z_max - z_min) * f for f in (0.15, 0.30, 0.50, 0.65, 0.80)]
 
     thinnest = float("inf")
     thinnest_z = None
@@ -409,13 +438,18 @@ def check_minimum_wall(shape, spec: dict) -> list:
         return [_pass(label, "solid part — no hollow sections detected")]
 
     detail = f"{thinnest:.2f}mm at Z~{thinnest_z:.1f}mm (minimum required: {min_wall:.2f}mm)"
-    if thinnest >= min_wall:
-        return [_pass(label, detail)]
-    else:
+    if thinnest < min_wall:
         return [_fail(label,
             f"{detail} — wall is {min_wall - thinnest:.2f}mm BELOW minimum. "
             f"Increase wall thickness or reduce cavity size."
         )]
+    elif thinnest < min_wall + 0.3:
+        return [_warn(label,
+            f"{detail} — wall is AT the minimum threshold. "
+            f"Check slicer preview to confirm perimeter fill is solid."
+        )]
+    else:
+        return [_pass(label, detail)]
 
 
 # ── Main validation runner ────────────────────────────────────────────────────
