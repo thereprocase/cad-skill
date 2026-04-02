@@ -32,5 +32,13 @@
 - Countersunk screws sit flush — backplate lies flat against wall.
 - Print orientation puts arm layers parallel to load direction — optimal for FDM tensile strength along the arm.
 
+## Process Issues
+
+### Issue 1: Incomplete spec — no features or components declared
+The spec for this round had empty features and components arrays. The two M4 screw holes should have been declared as type "hole" features in the spec. This means the Ent skipped proper spec capture for the most important measurable features on the part. The validator still confirmed the holes via geometry probing, but the spec should have driven that check, not ad-hoc queries. Without spec'd features, the validation workflow is running on luck rather than intent.
+
+### Issue 2: No cross-sections rendered
+Zero cross-section PNGs were generated for Round 3. The cross-section renderer had nothing to cut against because the spec declared no features or components. I reviewed the part from the 4-view preview only and relied on the validator numbers for hole confirmation. For a part with through-holes and countersinks, a YZ section through the screw axis would have been the definitive geometry check — and it never happened. The renderer should have a fallback for featureless specs (e.g., auto-generate sections at 25/50/75% of each axis) so this gap doesn't silently pass review again.
+
 ## Bugs Found During Round 3
 - Bug 10: validate_geometry.py hole finder returned same hole twice when two identical-diameter holes shared the same XY position at different Z. Fixed with Z tiebreaker.
